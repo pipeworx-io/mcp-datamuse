@@ -17,156 +17,143 @@ interface McpToolExport {
 }
 
 /**
- * Datamuse MCP — word-relation lookup
+ * Datamuse MCP — word-finding engine (keyless).
  *
- * Auth: none. ~100k req/day/IP cap.
+ * Datamuse is a word-finding query engine: given a set of constraints it
+ * returns words that match. Useful for writing, naming, crosswords, poetry,
+ * and NLP. Supports rhymes, near-rhymes, synonyms, antonyms, "means-like"
+ * (similar meaning), "sounds-like" (phonetic), "spelled-like" (wildcard
+ * pattern), word-association ("triggers"), adjectives-for-a-noun /
+ * nouns-for-an-adjective, plus prefix autocomplete suggestions.
+ *
+ * Auth: none. Fair-use cap ~100k req/day per IP.
  * Docs: https://www.datamuse.com/api/
  */
 
 
 const BASE = 'https://api.datamuse.com';
+const UA = 'pipeworx/1.0 (+https://pipeworx.io)';
 
 const tools: McpToolExport['tools'] = [
   {
-    name: 'words',
+    name: 'find_words',
     description:
-      'Generic words query. Combine constraints — most callers want one of the named helper tools instead.',
+      'Find English words matching one or more constraints using the Datamuse word-finding engine. ' +
+      'Combine any constraints below (at least one is required). Great for writing, naming, brainstorming, ' +
+      'crosswords, poetry, and NLP. Constraints: means_like (words with a similar meaning / loose synonyms), ' +
+      'rhymes_with (perfect rhymes), near_rhymes_with (approximate rhymes), synonyms_of (synonyms), ' +
+      'antonyms_of (antonyms), associated_with (words statistically triggered/associated with the term), ' +
+      'sounds_like (phonetically similar words), spelled_like (spelling pattern with wildcards: * = any ' +
+      'sequence of letters, ? = exactly one letter, e.g. "t*k" or "t??t"), adjectives_for (adjectives that ' +
+      'commonly describe the given noun), nouns_for (nouns commonly described by the given adjective). ' +
+      'Optionally bias results toward comma-separated `topics`. Returns words ranked by relevance score.',
     inputSchema: {
       type: 'object',
       properties: {
-        means_like: { type: 'string', description: 'Semantic similar (ml=)' },
-        sounds_like: { type: 'string', description: 'Phonetic similar (sl=)' },
-        spelled_like: { type: 'string', description: 'Spelling pattern with ? and * wildcards (sp=)' },
-        follows: { type: 'string', description: 'Word that usually follows (lc=)' },
-        precedes: { type: 'string', description: 'Word that usually precedes (rc=)' },
-        related: { type: 'string', description: 'Related code: jja jjb syn ant trg ant spc gen com par bga bgb hom cns' },
-        topics: { type: 'string', description: 'Comma-sep topic words to bias results' },
-        max: { type: 'number', description: '1-1000 (default 100)' },
+        means_like: { type: 'string', description: 'Find words with a meaning similar to this (Datamuse ml=).' },
+        rhymes_with: { type: 'string', description: 'Find perfect rhymes for this word (rel_rhy=).' },
+        near_rhymes_with: { type: 'string', description: 'Find approximate / near rhymes for this word (rel_nry=).' },
+        synonyms_of: { type: 'string', description: 'Find synonyms of this word (rel_syn=).' },
+        antonyms_of: { type: 'string', description: 'Find antonyms of this word (rel_ant=).' },
+        associated_with: { type: 'string', description: 'Find words statistically associated with / triggered by this word (rel_trg=).' },
+        sounds_like: { type: 'string', description: 'Find words that sound like this (phonetic, sl=).' },
+        spelled_like: { type: 'string', description: 'Spelling pattern; * = any sequence of letters, ? = exactly one letter (sp=), e.g. "t*k".' },
+        adjectives_for: { type: 'string', description: 'Find adjectives that commonly describe this noun (rel_jjb=).' },
+        nouns_for: { type: 'string', description: 'Find nouns commonly described by this adjective (rel_jja=).' },
+        topics: { type: 'string', description: 'Comma-separated topic words to bias results toward (topics=).' },
+        max: { type: 'number', description: 'Max results, 1-1000 (default 20).' },
       },
     },
   },
   {
-    name: 'means_like',
-    description: 'Synonyms / semantic relatives.',
-    inputSchema: {
-      type: 'object',
-      properties: { word: { type: 'string' }, max: { type: 'number' } },
-      required: ['word'],
-    },
-  },
-  {
-    name: 'rhymes',
-    description: 'Perfect or approximate rhymes.',
+    name: 'suggest',
+    description:
+      'Autocomplete suggestions for a partial word or phrase using the Datamuse engine. ' +
+      'Given a prefix, returns likely completions ranked by relevance score — useful for ' +
+      'search-as-you-type, naming, and crossword/word-game hints.',
     inputSchema: {
       type: 'object',
       properties: {
-        word: { type: 'string' },
-        perfect: { type: 'boolean', description: 'true (default) = perfect rhyme, false = approximate' },
-        max: { type: 'number' },
+        prefix: { type: 'string', description: 'The partial word / phrase typed so far.' },
+        max: { type: 'number', description: 'Max suggestions, 1-1000 (default 10).' },
       },
-      required: ['word'],
-    },
-  },
-  {
-    name: 'sounds_like',
-    description: 'Phonetic neighbors.',
-    inputSchema: {
-      type: 'object',
-      properties: { word: { type: 'string' }, max: { type: 'number' } },
-      required: ['word'],
-    },
-  },
-  {
-    name: 'spelled_like',
-    description: 'Wildcard-pattern matches (? = any letter, * = any sequence).',
-    inputSchema: {
-      type: 'object',
-      properties: { pattern: { type: 'string' }, max: { type: 'number' } },
-      required: ['pattern'],
-    },
-  },
-  {
-    name: 'predicts_next',
-    description: 'Autocomplete prediction. Pass the word that comes BEFORE as `after`.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        after: { type: 'string', description: 'Prefix word (Datamuse param: lc)' },
-        before: { type: 'string', description: 'Word that should come right after the suggestion (rc)' },
-        max: { type: 'number' },
-      },
-      required: ['after'],
-    },
-  },
-  {
-    name: 'homophones',
-    description: 'Same pronunciation, different spelling.',
-    inputSchema: {
-      type: 'object',
-      properties: { word: { type: 'string' }, max: { type: 'number' } },
-      required: ['word'],
+      required: ['prefix'],
     },
   },
 ];
 
+const CONSTRAINTS: Array<[string, string]> = [
+  ['means_like', 'ml'],
+  ['rhymes_with', 'rel_rhy'],
+  ['near_rhymes_with', 'rel_nry'],
+  ['synonyms_of', 'rel_syn'],
+  ['antonyms_of', 'rel_ant'],
+  ['associated_with', 'rel_trg'],
+  ['sounds_like', 'sl'],
+  ['spelled_like', 'sp'],
+  ['adjectives_for', 'rel_jjb'],
+  ['nouns_for', 'rel_jja'],
+  ['topics', 'topics'],
+];
+
 async function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-  switch (name) {
-    case 'words': {
-      const p = new URLSearchParams();
-      if (args.means_like) p.set('ml', String(args.means_like));
-      if (args.sounds_like) p.set('sl', String(args.sounds_like));
-      if (args.spelled_like) p.set('sp', String(args.spelled_like));
-      if (args.follows) p.set('lc', String(args.follows));
-      if (args.precedes) p.set('rc', String(args.precedes));
-      if (args.related) p.set(`rel_${args.related}`, '');
-      if (args.topics) p.set('topics', String(args.topics));
-      p.set('max', String(Math.min(1000, Math.max(1, (args.max as number) ?? 100))));
-      return dmGet(p);
+  try {
+    switch (name) {
+      case 'find_words': {
+        const params = new URLSearchParams();
+        for (const [arg, param] of CONSTRAINTS) {
+          const v = args[arg];
+          if (typeof v === 'string' && v.trim()) params.set(param, v.trim());
+        }
+        if ([...params.keys()].length === 0) {
+          return { error: 'provide at least one constraint (e.g. rhymes_with, means_like, synonyms_of)' };
+        }
+        params.set('max', String(clampMax(args.max, 20)));
+        const data = await dmGet('/words', params);
+        if (!Array.isArray(data)) return { error: 'unexpected response from Datamuse' };
+        const words = data.map((w: Record<string, unknown>) => ({
+          word: w.word,
+          score: w.score,
+          numSyllables: w.numSyllables,
+        }));
+        return { count: words.length, words };
+      }
+      case 'suggest': {
+        const prefix = args.prefix;
+        if (typeof prefix !== 'string' || !prefix.trim()) {
+          return { error: 'prefix is required (the partial word typed so far)' };
+        }
+        const params = new URLSearchParams();
+        params.set('s', prefix.trim());
+        params.set('max', String(clampMax(args.max, 10)));
+        const data = await dmGet('/sug', params);
+        if (!Array.isArray(data)) return { error: 'unexpected response from Datamuse' };
+        const suggestions = data.map((w: Record<string, unknown>) => ({ word: w.word, score: w.score }));
+        return { count: suggestions.length, suggestions };
+      }
+      default:
+        return { error: `Unknown tool: ${name}` };
     }
-    case 'means_like':
-      return dmGet(new URLSearchParams({ ml: reqStr(args, 'word', '"happy"'), max: String((args.max as number) ?? 25) }));
-    case 'rhymes': {
-      const code = args.perfect === false ? 'rel_nry' : 'rel_rhy';
-      return dmGet(new URLSearchParams({ [code]: reqStr(args, 'word', '"orange"'), max: String((args.max as number) ?? 25) }));
-    }
-    case 'sounds_like':
-      return dmGet(new URLSearchParams({ sl: reqStr(args, 'word', '"caffeine"'), max: String((args.max as number) ?? 25) }));
-    case 'spelled_like':
-      return dmGet(new URLSearchParams({ sp: reqStr(args, 'pattern', '"t??t"'), max: String((args.max as number) ?? 25) }));
-    case 'predicts_next': {
-      const p = new URLSearchParams({ lc: reqStr(args, 'after', '"the"'), max: String((args.max as number) ?? 25) });
-      if (args.before) p.set('rc', String(args.before));
-      return dmGet(p);
-    }
-    case 'homophones':
-      return dmGet(new URLSearchParams({ rel_hom: reqStr(args, 'word', '"right"'), max: String((args.max as number) ?? 25) }));
-    default:
-      throw new Error(`Unknown tool: ${name}`);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
   }
 }
 
-async function dmGet(params: URLSearchParams) {
-  const url = `${BASE}/words?${params}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': 'pipeworx-mcp-datamuse/1.0 (+https://pipeworx.io)',
-    },
+function clampMax(v: unknown, fallback: number): number {
+  const n = typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : fallback;
+  return Math.min(1000, Math.max(1, n));
+}
+
+async function dmGet(path: string, params: URLSearchParams): Promise<unknown> {
+  const res = await fetch(`${BASE}${path}?${params.toString()}`, {
+    headers: { Accept: 'application/json', 'User-Agent': UA },
   });
-  if (res.status === 429) throw new Error('Datamuse: rate-limit (HTTP 429)');
+  if (res.status === 429) throw new Error('Datamuse: rate-limited (HTTP 429)');
   if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Datamuse error: ${res.status} ${t.slice(0, 200)}`);
+    const t = await res.text().catch(() => '');
+    throw new Error(`Datamuse: ${res.status} ${t.slice(0, 200)}`);
   }
   return res.json();
-}
-
-function reqStr(args: Record<string, unknown>, key: string, example: string): string {
-  const v = args[key];
-  if (typeof v !== 'string' || !v.trim()) {
-    throw new Error(`Required argument "${key}" is missing. Pass a string like ${example}.`);
-  }
-  return v;
 }
 
 export default { tools, callTool, meter: { credits: 1 } } satisfies McpToolExport;

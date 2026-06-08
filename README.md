@@ -1,19 +1,13 @@
 # mcp-datamuse
 
-Datamuse MCP — word-relation lookup
+Datamuse MCP — word-finding engine (keyless).
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 673+ live data sources.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 780+ live data sources.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `means_like` | Synonyms / semantic relatives. |
-| `rhymes` | Perfect or approximate rhymes. |
-| `sounds_like` | Phonetic neighbors. |
-| `spelled_like` | Wildcard-pattern matches (? = any letter, * = any sequence). |
-| `predicts_next` | Autocomplete prediction. Pass the word that comes BEFORE as `after`. |
-| `homophones` | Same pronunciation, different spelling. |
 
 ## Quick Start
 
@@ -29,7 +23,7 @@ Add to your MCP client (Claude Desktop, Cursor, Windsurf, etc.):
 }
 ```
 
-Or connect to the full Pipeworx gateway for access to all 673+ data sources:
+Or connect to the full Pipeworx gateway for access to all 780+ data sources:
 
 ```json
 {

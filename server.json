@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.pipeworx-io/datamuse",
   "title": "Datamuse",
-  "description": "Datamuse MCP — word-relation lookup",
+  "description": "Datamuse MCP — word-finding engine (keyless).",
   "version": "0.1.0",
   "websiteUrl": "https://pipeworx.io/packs/datamuse",
   "repository": {
