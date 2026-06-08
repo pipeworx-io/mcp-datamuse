@@ -1,6 +1,6 @@
 {
   "name": "@pipeworx/mcp-datamuse",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Datamuse MCP — word-finding engine (keyless).",
   "type": "module",
   "main": "src/index.ts",

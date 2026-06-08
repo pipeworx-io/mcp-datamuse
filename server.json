@@ -3,7 +3,7 @@
   "name": "io.github.pipeworx-io/datamuse",
   "title": "Datamuse",
   "description": "Datamuse MCP — word-finding engine (keyless).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "websiteUrl": "https://pipeworx.io/packs/datamuse",
   "repository": {
     "url": "https://github.com/pipeworx-io/mcp-datamuse",
